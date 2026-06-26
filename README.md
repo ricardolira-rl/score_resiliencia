@@ -35,7 +35,7 @@ Script auxiliar para preparar a configuracao dos pilares.
 
 Ele varre a planilha original, identifica os pares unicos de `Indicador` e
 `Requisito`, mostra uma amostra no terminal e gera um arquivo com uma sugestao
-inicial de `PILLAR_CONFIG`.
+inicial de `PILLAR_CONFIG` com 6 pilares.
 
 Entrada:
 
@@ -44,7 +44,7 @@ Entrada:
 Saida:
 
 - lista de indicadores e requisitos no terminal;
-- arquivo `pillar_config_sugerido.py`.
+- arquivo `pillar_config_sugerido.py` com 6 pilares.
 
 ### `pillar_config_sugerido.py`
 
@@ -60,7 +60,7 @@ Entrada:
 
 Saida:
 
-- bloco Python sugerido para configurar pilares, indicadores, requisitos e
+- bloco Python sugerido para configurar 6 pilares, indicadores, requisitos e
   pesos.
 
 ## 1. Instalar dependencias
@@ -97,15 +97,15 @@ Ele tambem gera o arquivo:
 pillar_config_sugerido.py
 ```
 
-Use esse arquivo como base para configurar os pilares, indicadores, requisitos
-e pesos no script principal.
+Use esse arquivo como base para configurar os 6 pilares, indicadores,
+requisitos e pesos no script principal.
 
 ## 3. Configurar pilares e pesos no script principal
 
 Abra o arquivo `filter_dir_cyber_security.py` e ajuste a variavel
 `PILLAR_CONFIG`.
 
-A configuracao possui tres niveis de peso:
+A configuracao possui 6 pilares e tres niveis de peso:
 
 - `Peso Pilar %`: peso do pilar na visao final.
 - `Peso Indicador %`: peso do indicador dentro do pilar.
@@ -116,8 +116,8 @@ Exemplo:
 ```python
 PILLAR_CONFIG = [
     {
-        "Pilar": "Desenvolvimento Seguro",
-        "Peso Pilar %": 100,
+        "Pilar": "Pilar 1 - Ajustar nome",
+        "Peso Pilar %": 16.67,
         "Indicadores": [
             {
                 "Indicador": "Testes em tempo de desenvolvimento (Sonar, TaaC, Hopper)",
@@ -128,6 +128,31 @@ PILLAR_CONFIG = [
                 ],
             },
         ],
+    },
+    {
+        "Pilar": "Pilar 2 - Ajustar nome",
+        "Peso Pilar %": 16.67,
+        "Indicadores": [],
+    },
+    {
+        "Pilar": "Pilar 3 - Ajustar nome",
+        "Peso Pilar %": 16.67,
+        "Indicadores": [],
+    },
+    {
+        "Pilar": "Pilar 4 - Ajustar nome",
+        "Peso Pilar %": 16.67,
+        "Indicadores": [],
+    },
+    {
+        "Pilar": "Pilar 5 - Ajustar nome",
+        "Peso Pilar %": 16.67,
+        "Indicadores": [],
+    },
+    {
+        "Pilar": "Pilar 6 - Ajustar nome",
+        "Peso Pilar %": 16.65,
+        "Indicadores": [],
     },
 ]
 ```
@@ -175,6 +200,6 @@ A planilha final possui as abas:
 1. Instale as dependencias.
 2. Rode `listar_indicadores_requisitos.py` para descobrir os indicadores e
    requisitos existentes na planilha.
-3. Use o arquivo `pillar_config_sugerido.py` como referencia.
+3. Use o arquivo `pillar_config_sugerido.py`, com 6 pilares, como referencia.
 4. Edite o `PILLAR_CONFIG` no `filter_dir_cyber_security.py`.
 5. Rode `filter_dir_cyber_security.py` para gerar a planilha final.

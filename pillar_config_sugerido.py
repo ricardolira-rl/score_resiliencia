@@ -1,7 +1,7 @@
 PILLAR_CONFIG = [
     {
-        "Pilar": "Nome do Pilar",
-        "Peso Pilar %": 100,
+        "Pilar": "Pilar 1 - Ajustar nome",
+        "Peso Pilar %": 16.67,
         "Indicadores": [
             {
                 "Indicador": 'Testes em tempo de desenvolvimento (Sonar, TaaC, Hopper)',
@@ -17,6 +17,36 @@ PILLAR_CONFIG = [
                     },
                 ],
             },
+        ],
+    },
+    {
+        "Pilar": "Pilar 2 - Ajustar nome",
+        "Peso Pilar %": 16.67,
+        "Indicadores": [
+        ],
+    },
+    {
+        "Pilar": "Pilar 3 - Ajustar nome",
+        "Peso Pilar %": 16.67,
+        "Indicadores": [
+        ],
+    },
+    {
+        "Pilar": "Pilar 4 - Ajustar nome",
+        "Peso Pilar %": 16.67,
+        "Indicadores": [
+        ],
+    },
+    {
+        "Pilar": "Pilar 5 - Ajustar nome",
+        "Peso Pilar %": 16.67,
+        "Indicadores": [
+        ],
+    },
+    {
+        "Pilar": "Pilar 6 - Ajustar nome",
+        "Peso Pilar %": 16.65,
+        "Indicadores": [
         ],
     },
 ]

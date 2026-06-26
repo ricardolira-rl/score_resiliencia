@@ -10,6 +10,7 @@ import pandas as pd
 DEFAULT_INPUT_FILE = r"C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx"
 DEFAULT_DIRETORIA = "DIR CYBER SECURITY"
 REQUIRED_COLUMNS = ["Diretoria", "Indicador", "Requisito"]
+DEFAULT_PILLAR_COUNT = 6
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -45,6 +46,12 @@ def build_parser() -> argparse.ArgumentParser:
             "Valor da coluna Diretoria usado no filtro. "
             "Use vazio para listar todas as diretorias."
         ),
+    )
+    parser.add_argument(
+        "--pilares",
+        type=int,
+        default=DEFAULT_PILLAR_COUNT,
+        help=f"Quantidade de pilares na sugestao de PILLAR_CONFIG. Padrao: {DEFAULT_PILLAR_COUNT}.",
     )
     return parser
 
@@ -103,14 +110,18 @@ def quote(value: str) -> str:
     return repr(value)
 
 
-def render_pillar_config(inventory: pd.DataFrame) -> str:
-    lines = [
-        "PILLAR_CONFIG = [",
-        "    {",
-        '        "Pilar": "Nome do Pilar",',
-        '        "Peso Pilar %": 100,',
-        '        "Indicadores": [',
-    ]
+def pillar_weights(pillar_count: int) -> list[float]:
+    if pillar_count <= 0:
+        raise ValueError("A quantidade de pilares deve ser maior que zero.")
+
+    base_weight = round(100 / pillar_count, 2)
+    weights = [base_weight for _ in range(pillar_count)]
+    weights[-1] = round(100 - sum(weights[:-1]), 2)
+    return weights
+
+
+def render_indicators(inventory: pd.DataFrame, indentation: str) -> list[str]:
+    lines = []
 
     for indicator, group in inventory.groupby("Indicador", sort=True):
         requirements = group["Requisito"].tolist()
@@ -118,34 +129,59 @@ def render_pillar_config(inventory: pd.DataFrame) -> str:
 
         lines.extend(
             [
-                "            {",
-                f'                "Indicador": {quote(indicator)},',
-                '                "Peso Indicador %": 100,',
-                '                "Requisitos": [',
+                f"{indentation}{{",
+                f'{indentation}    "Indicador": {quote(indicator)},',
+                f'{indentation}    "Peso Indicador %": 100,',
+                f'{indentation}    "Requisitos": [',
             ]
         )
 
         for requirement in requirements:
             lines.extend(
                 [
-                    "                    {",
-                    f'                        "Requisito": {quote(requirement)},',
-                    f'                        "Peso Requisito %": {requirement_weight},',
-                    "                    },",
+                    f"{indentation}        {{",
+                    f'{indentation}            "Requisito": {quote(requirement)},',
+                    f'{indentation}            "Peso Requisito %": {requirement_weight},',
+                    f"{indentation}        }},",
                 ]
             )
 
         lines.extend(
             [
-                "                ],",
-                "            },",
+                f"{indentation}    ],",
+                f"{indentation}}},",
+            ]
+        )
+
+    return lines
+
+
+def render_pillar_config(inventory: pd.DataFrame, pillar_count: int) -> str:
+    weights = pillar_weights(pillar_count)
+    lines = ["PILLAR_CONFIG = ["]
+
+    for index, weight in enumerate(weights, start=1):
+        lines.extend(
+            [
+                "    {",
+                f'        "Pilar": "Pilar {index} - Ajustar nome",',
+                f'        "Peso Pilar %": {weight},',
+                '        "Indicadores": [',
+            ]
+        )
+
+        if index == 1:
+            lines.extend(render_indicators(inventory, "            "))
+
+        lines.extend(
+            [
+                "        ],",
+                "    },",
             ]
         )
 
     lines.extend(
         [
-            "        ],",
-            "    },",
             "]",
             "",
         ]
@@ -158,6 +194,7 @@ def list_indicators_requirements(
     output_file: str | None,
     sheet: str,
     diretoria: str,
+    pilares: int,
 ) -> Path:
     input_path = Path(input_file).expanduser()
     if not input_path.exists():
@@ -169,9 +206,10 @@ def list_indicators_requirements(
     inventory = build_inventory(dataframe, diretoria)
     output_path = Path(output_file).expanduser() if output_file else default_output_path()
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(render_pillar_config(inventory), encoding="utf-8")
+    output_path.write_text(render_pillar_config(inventory, pilares), encoding="utf-8")
 
     print(f"Diretoria filtrada: {diretoria or 'Todas'}")
+    print(f"Pilares na sugestao: {pilares}")
     print(f"Indicadores encontrados: {inventory['Indicador'].nunique()}")
     print(f"Requisitos encontrados: {len(inventory)}")
     print()
@@ -191,6 +229,7 @@ def main() -> int:
             output_file=args.output,
             sheet=args.sheet,
             diretoria=args.diretoria,
+            pilares=args.pilares,
         )
     except Exception as exc:
         print(f"Erro: {exc}", file=sys.stderr)
