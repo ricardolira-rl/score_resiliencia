@@ -10,7 +10,7 @@ registros da diretoria `DIR CYBER SECURITY` e gerar visoes consolidadas por
 
 Script principal do projeto.
 
-Ele le a planilha original, filtra os registros da diretoria configurada e
+Ele le uma ou mais planilhas originais, filtra os registros da diretoria configurada e
 gera uma nova planilha Excel com abas de dados filtrados, resumo, visao por
 indicador, visao por pilar e configuracao usada no calculo.
 
@@ -33,7 +33,7 @@ Saida:
 
 Script auxiliar para preparar a configuracao dos pilares.
 
-Ele varre a planilha original, identifica os pares unicos de `Indicador` e
+Ele varre uma ou mais planilhas originais, identifica os pares unicos de `Indicador` e
 `Requisito`, mostra uma amostra no terminal e gera um arquivo com uma sugestao
 inicial de `PILLAR_CONFIG` com 6 pilares.
 
@@ -77,6 +77,12 @@ Antes de configurar os pilares, rode o script de inventario:
 
 ```powershell
 python listar_indicadores_requisitos.py "C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx"
+```
+
+Para ler duas planilhas na mesma execucao, informe os dois caminhos:
+
+```powershell
+python listar_indicadores_requisitos.py "C:\caminho\primeira_planilha.xlsx" "C:\caminho\segunda_planilha.xlsx"
 ```
 
 Por padrao, ele filtra somente a diretoria `DIR CYBER SECURITY`.
@@ -165,6 +171,12 @@ Execute:
 python filter_dir_cyber_security.py "C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx"
 ```
 
+Para consolidar duas planilhas em uma unica saida:
+
+```powershell
+python filter_dir_cyber_security.py "C:\caminho\primeira_planilha.xlsx" "C:\caminho\segunda_planilha.xlsx" -o "C:\Users\ricar\Documents\Score Resiliencia\score_resiliencia_filtrado.xlsx"
+```
+
 Para escolher o local e nome do arquivo de saida:
 
 ```powershell
@@ -172,6 +184,19 @@ python filter_dir_cyber_security.py "C:\Users\ricar\Desktop\DIR CYBER SECURITY.x
 ```
 
 Esse comando executa o script `filter_dir_cyber_security.py`.
+
+## Colunas obrigatorias
+
+As planilhas podem ter colunas extras ou estruturas diferentes, mas precisam
+conter estas colunas:
+
+- `Diretoria`
+- `Release Train`
+- `Squad`
+- `Indicador`
+- `Requisito`
+- `Status`
+- `Quantidade`
 
 ## 5. Abas geradas no Excel
 

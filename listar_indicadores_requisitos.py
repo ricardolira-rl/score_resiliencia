@@ -16,15 +16,15 @@ DEFAULT_PILLAR_COUNT = 6
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Le uma planilha Excel e lista os indicadores e requisitos "
+            "Le uma ou mais planilhas Excel e lista os indicadores e requisitos "
             "existentes para apoiar a configuracao do PILLAR_CONFIG."
         )
     )
     parser.add_argument(
-        "input_file",
-        nargs="?",
-        default=DEFAULT_INPUT_FILE,
-        help="Caminho do arquivo Excel de entrada.",
+        "input_files",
+        nargs="*",
+        default=[DEFAULT_INPUT_FILE],
+        help="Caminho de uma ou mais planilhas Excel de entrada.",
     )
     parser.add_argument(
         "-o",
@@ -74,6 +74,25 @@ def validate_columns(dataframe: pd.DataFrame) -> None:
             f"Colunas obrigatorias nao encontradas: {missing}. "
             f"Colunas disponiveis: {available_columns}"
         )
+
+
+def read_spreadsheets(input_files: list[str], sheet: str) -> tuple[pd.DataFrame, list[Path]]:
+    input_paths = [Path(input_file).expanduser() for input_file in input_files]
+    dataframes = []
+
+    for input_path in input_paths:
+        if not input_path.exists():
+            raise FileNotFoundError(f"Arquivo nao encontrado: {input_path}")
+
+        dataframe = pd.read_excel(input_path, sheet_name=normalize_sheet_arg(sheet))
+        validate_columns(dataframe)
+        dataframe["Arquivo Origem"] = input_path.name
+        dataframes.append(dataframe)
+
+    if not dataframes:
+        raise ValueError("Informe pelo menos uma planilha de entrada.")
+
+    return pd.concat(dataframes, ignore_index=True), input_paths
 
 
 def clean_text(value: object) -> str:
@@ -190,24 +209,20 @@ def render_pillar_config(inventory: pd.DataFrame, pillar_count: int) -> str:
 
 
 def list_indicators_requirements(
-    input_file: str,
+    input_files: list[str],
     output_file: str | None,
     sheet: str,
     diretoria: str,
     pilares: int,
 ) -> Path:
-    input_path = Path(input_file).expanduser()
-    if not input_path.exists():
-        raise FileNotFoundError(f"Arquivo nao encontrado: {input_path}")
-
-    dataframe = pd.read_excel(input_path, sheet_name=normalize_sheet_arg(sheet))
-    validate_columns(dataframe)
+    dataframe, input_paths = read_spreadsheets(input_files, sheet)
 
     inventory = build_inventory(dataframe, diretoria)
     output_path = Path(output_file).expanduser() if output_file else default_output_path()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(render_pillar_config(inventory, pilares), encoding="utf-8")
 
+    print(f"Arquivos lidos: {len(input_paths)}")
     print(f"Diretoria filtrada: {diretoria or 'Todas'}")
     print(f"Pilares na sugestao: {pilares}")
     print(f"Indicadores encontrados: {inventory['Indicador'].nunique()}")
@@ -225,7 +240,7 @@ def main() -> int:
 
     try:
         list_indicators_requirements(
-            input_file=args.input_file,
+            input_files=args.input_files,
             output_file=args.output,
             sheet=args.sheet,
             diretoria=args.diretoria,

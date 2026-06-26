@@ -63,15 +63,15 @@ PILLAR_CONFIG = [
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Le uma planilha Excel e filtra as linhas em que a coluna "
+            "Le uma ou mais planilhas Excel e filtra as linhas em que a coluna "
             "'Diretoria' seja igual a 'DIR CYBER SECURITY'."
         )
     )
     parser.add_argument(
-        "input_file",
-        nargs="?",
-        default=r"C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx",
-        help="Caminho do arquivo Excel de entrada.",
+        "input_files",
+        nargs="*",
+        default=[r"C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx"],
+        help="Caminho de uma ou mais planilhas Excel de entrada.",
     )
     parser.add_argument(
         "-o",
@@ -101,8 +101,11 @@ def normalize_sheet_arg(sheet: str) -> str | int:
         return sheet
 
 
-def default_output_path(input_path: Path) -> Path:
-    return input_path.with_name(f"{input_path.stem}_filtrado.xlsx")
+def default_output_path(input_paths: list[Path]) -> Path:
+    if len(input_paths) == 1:
+        input_path = input_paths[0]
+        return input_path.with_name(f"{input_path.stem}_filtrado.xlsx")
+    return Path.cwd() / "score_resiliencia_filtrado.xlsx"
 
 
 def validate_columns(dataframe: pd.DataFrame) -> None:
@@ -116,6 +119,25 @@ def validate_columns(dataframe: pd.DataFrame) -> None:
             f"Colunas obrigatorias nao encontradas: {missing}. "
             f"Colunas disponiveis: {available_columns}"
         )
+
+
+def read_spreadsheets(input_files: list[str], sheet: str) -> tuple[pd.DataFrame, list[Path]]:
+    input_paths = [Path(input_file).expanduser() for input_file in input_files]
+    dataframes = []
+
+    for input_path in input_paths:
+        if not input_path.exists():
+            raise FileNotFoundError(f"Arquivo nao encontrado: {input_path}")
+
+        dataframe = pd.read_excel(input_path, sheet_name=normalize_sheet_arg(sheet))
+        validate_columns(dataframe)
+        dataframe["Arquivo Origem"] = input_path.name
+        dataframes.append(dataframe)
+
+    if not dataframes:
+        raise ValueError("Informe pelo menos uma planilha de entrada.")
+
+    return pd.concat(dataframes, ignore_index=True), input_paths
 
 
 def build_summary(dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -279,19 +301,13 @@ def build_pillar_view(summary: pd.DataFrame) -> pd.DataFrame:
 
 
 def filter_spreadsheet(
-    input_file: str,
+    input_files: list[str],
     output_file: str | None,
     sheet: str,
     diretoria: str,
 ) -> Path:
-    input_path = Path(input_file).expanduser()
-    if not input_path.exists():
-        raise FileNotFoundError(f"Arquivo nao encontrado: {input_path}")
-
-    output_path = Path(output_file).expanduser() if output_file else default_output_path(input_path)
-
-    dataframe = pd.read_excel(input_path, sheet_name=normalize_sheet_arg(sheet))
-    validate_columns(dataframe)
+    dataframe, input_paths = read_spreadsheets(input_files, sheet)
+    output_path = Path(output_file).expanduser() if output_file else default_output_path(input_paths)
 
     filtered = dataframe[
         dataframe["Diretoria"].astype(str).str.strip().eq(diretoria)
@@ -308,6 +324,7 @@ def filter_spreadsheet(
         pillar_view.to_excel(writer, sheet_name="Visao Pilares", index=False)
         pillar_config.to_excel(writer, sheet_name="Config Pilares", index=False)
 
+    print(f"Arquivos lidos: {len(input_paths)}")
     print(f"Linhas encontradas: {len(filtered)}")
     print(f"Linhas no resumo: {len(summary)}")
     print(f"Linhas na visao de pilares: {len(pillar_view)}")
@@ -321,7 +338,7 @@ def main() -> int:
 
     try:
         filter_spreadsheet(
-            input_file=args.input_file,
+            input_files=args.input_files,
             output_file=args.output,
             sheet=args.sheet,
             diretoria=args.diretoria,
