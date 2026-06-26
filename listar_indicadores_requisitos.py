@@ -8,7 +8,7 @@ import pandas as pd
 
 
 DEFAULT_INPUT_FILE = r"C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx"
-DEFAULT_DIRETORIA = "DIR CYBER SECURITY"
+DEFAULT_DIRETORIA = ""
 REQUIRED_COLUMNS = ["Diretoria", "Indicador", "Requisito"]
 DEFAULT_PILLAR_COUNT = 6
 
@@ -44,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_DIRETORIA,
         help=(
             "Valor usado para filtrar pelo nome do arquivo sem extensao. "
-            "Use vazio para listar todas as diretorias."
+            "Se omitido, lista todas as diretorias/arquivos informados."
         ),
     )
     parser.add_argument(

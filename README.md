@@ -86,20 +86,19 @@ Para ler duas planilhas na mesma execucao, informe os dois caminhos:
 python listar_indicadores_requisitos.py "C:\caminho\primeira_planilha.xlsx" "C:\caminho\segunda_planilha.xlsx"
 ```
 
-Por padrao, ele filtra somente arquivos cujo nome sem extensao seja
-`DIR CYBER SECURITY`.
+Por padrao, ele processa todos os arquivos informados. Cada arquivo vira uma
+diretoria usando o nome do arquivo sem extensao.
 
-Se uma planilha retornar resultado vazio, rode sem filtro de diretoria para
-validar os dados do arquivo:
+Para filtrar uma diretoria especifica, informe o nome do arquivo sem extensao:
 
 ```powershell
-python listar_indicadores_requisitos.py "C:\caminho\segunda_planilha.xlsx" --diretoria ""
+python listar_indicadores_requisitos.py "C:\caminho\segunda_planilha.xlsx" --diretoria "DIR TEC OPER CYBER SECURITY"
 ```
 
 Saida esperada no terminal:
 
 ```text
-Diretoria filtrada: DIR CYBER SECURITY
+Diretoria filtrada: Todas
 Indicadores encontrados: 1
 Requisitos encontrados: 2
 ```
@@ -201,6 +200,9 @@ A diretoria considerada pelo filtro e sempre o nome do arquivo sem extensao.
 Por exemplo, um arquivo chamado `DIR CYBER SECURITY.xlsx` sera tratado como
 diretoria `DIR CYBER SECURITY`, mesmo que a coluna `Diretoria` tenha outro
 valor.
+
+Outro exemplo: um arquivo chamado `DIR TEC OPER CYBER SECURITY.xlsx` sera
+tratado como diretoria `DIR TEC OPER CYBER SECURITY`.
 
 ## Colunas obrigatorias
 

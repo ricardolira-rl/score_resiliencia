@@ -7,7 +7,7 @@ import sys
 import pandas as pd
 
 
-DEFAULT_DIRETORIA = "DIR CYBER SECURITY"
+DEFAULT_DIRETORIA = ""
 SUMMARY_COLUMNS = ["Release Train", "Squad", "Indicador", "Requisito"]
 REQUIRED_COLUMNS = ["Diretoria", "Status", "Quantidade", *SUMMARY_COLUMNS]
 STATUS_COLUMNS = ["PASSED", "FAILED", "Percentual obtido"]
@@ -63,8 +63,8 @@ PILLAR_CONFIG = [
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Le uma ou mais planilhas Excel e filtra pelos arquivos cujo nome "
-            "sem extensao seja igual a 'DIR CYBER SECURITY'."
+            "Le uma ou mais planilhas Excel e usa o nome do arquivo sem "
+            "extensao como diretoria."
         )
     )
     parser.add_argument(
@@ -91,7 +91,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_DIRETORIA,
         help=(
             "Valor usado para filtrar pelo nome do arquivo sem extensao. "
-            f"Padrao: {DEFAULT_DIRETORIA!r}."
+            "Se omitido, processa todos os arquivos informados."
         ),
     )
     return parser
