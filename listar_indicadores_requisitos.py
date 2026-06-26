@@ -43,7 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--diretoria",
         default=DEFAULT_DIRETORIA,
         help=(
-            "Valor da coluna Diretoria usado no filtro. "
+            "Valor usado para filtrar pelo nome do arquivo sem extensao. "
             "Use vazio para listar todas as diretorias."
         ),
     )
@@ -76,6 +76,29 @@ def validate_columns(dataframe: pd.DataFrame) -> None:
         )
 
 
+def normalize_text(value: object) -> str:
+    if pd.isna(value):
+        return ""
+    return " ".join(str(value).replace("\xa0", " ").split()).upper()
+
+
+def format_diretoria_diagnostics(dataframe: pd.DataFrame) -> str:
+    file_values = (
+        dataframe["Diretoria Arquivo"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .value_counts()
+        .head(20)
+    )
+    if file_values.empty:
+        return "Nenhum valor encontrado no nome do arquivo."
+    return (
+        "Diretorias inferidas pelo nome do arquivo:\n"
+        f"{file_values.to_string() if not file_values.empty else '(vazio)'}"
+    )
+
+
 def read_spreadsheets(input_files: list[str], sheet: str) -> tuple[pd.DataFrame, list[Path]]:
     input_paths = [Path(input_file).expanduser() for input_file in input_files]
     dataframes = []
@@ -87,6 +110,7 @@ def read_spreadsheets(input_files: list[str], sheet: str) -> tuple[pd.DataFrame,
         dataframe = pd.read_excel(input_path, sheet_name=normalize_sheet_arg(sheet))
         validate_columns(dataframe)
         dataframe["Arquivo Origem"] = input_path.name
+        dataframe["Diretoria Arquivo"] = input_path.stem
         dataframes.append(dataframe)
 
     if not dataframes:
@@ -109,9 +133,17 @@ def build_inventory(dataframe: pd.DataFrame, diretoria: str) -> pd.DataFrame:
     working = dataframe.copy()
 
     if diretoria:
+        target = normalize_text(diretoria)
         working = working[
-            working["Diretoria"].map(clean_text).eq(diretoria)
+            working["Diretoria Arquivo"].map(normalize_text).eq(target)
         ].copy()
+
+    if working.empty:
+        print(
+            "Aviso: nenhuma linha encontrada para a diretoria "
+            f"{diretoria!r}. Diretorias disponiveis:"
+        )
+        print(format_diretoria_diagnostics(dataframe))
 
     working["Indicador"] = working["Indicador"].map(clean_text)
     working["Requisito"] = working["Requisito"].map(clean_text)

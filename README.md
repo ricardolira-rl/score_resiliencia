@@ -1,7 +1,7 @@
 # Score Resiliencia
 
-Scripts Python para ler uma planilha Excel do Score de Resiliencia, filtrar os
-registros da diretoria `DIR CYBER SECURITY` e gerar visoes consolidadas por
+Scripts Python para ler uma planilha Excel do Score de Resiliencia, identificar
+a diretoria pelo nome do arquivo sem extensao e gerar visoes consolidadas por
 `Release Train`, `Squad`, `Indicador`, `Requisito` e `Pilar`.
 
 ## Scripts e arquivos
@@ -10,9 +10,10 @@ registros da diretoria `DIR CYBER SECURITY` e gerar visoes consolidadas por
 
 Script principal do projeto.
 
-Ele le uma ou mais planilhas originais, filtra os registros da diretoria configurada e
-gera uma nova planilha Excel com abas de dados filtrados, resumo, visao por
-indicador, visao por pilar e configuracao usada no calculo.
+Ele le uma ou mais planilhas originais, identifica a diretoria pelo nome do
+arquivo sem extensao e gera uma nova planilha Excel com abas de dados
+filtrados, resumo, visao por indicador, visao por pilar e configuracao usada no
+calculo.
 
 Entrada:
 
@@ -85,7 +86,15 @@ Para ler duas planilhas na mesma execucao, informe os dois caminhos:
 python listar_indicadores_requisitos.py "C:\caminho\primeira_planilha.xlsx" "C:\caminho\segunda_planilha.xlsx"
 ```
 
-Por padrao, ele filtra somente a diretoria `DIR CYBER SECURITY`.
+Por padrao, ele filtra somente arquivos cujo nome sem extensao seja
+`DIR CYBER SECURITY`.
+
+Se uma planilha retornar resultado vazio, rode sem filtro de diretoria para
+validar os dados do arquivo:
+
+```powershell
+python listar_indicadores_requisitos.py "C:\caminho\segunda_planilha.xlsx" --diretoria ""
+```
 
 Saida esperada no terminal:
 
@@ -185,6 +194,14 @@ python filter_dir_cyber_security.py "C:\Users\ricar\Desktop\DIR CYBER SECURITY.x
 
 Esse comando executa o script `filter_dir_cyber_security.py`.
 
+Se o resultado final ficar vazio, o script imprime no terminal as diretorias
+inferidas pelo nome dos arquivos lidos.
+
+A diretoria considerada pelo filtro e sempre o nome do arquivo sem extensao.
+Por exemplo, um arquivo chamado `DIR CYBER SECURITY.xlsx` sera tratado como
+diretoria `DIR CYBER SECURITY`, mesmo que a coluna `Diretoria` tenha outro
+valor.
+
 ## Colunas obrigatorias
 
 As planilhas podem ter colunas extras ou estruturas diferentes, mas precisam
@@ -198,11 +215,15 @@ conter estas colunas:
 - `Status`
 - `Quantidade`
 
+O filtro de diretoria usa a coluna `Diretoria Arquivo`, criada
+automaticamente a partir do nome do arquivo sem extensao. Esse filtro ignora
+diferencas de maiusculas/minusculas, espacos repetidos e espacos invisiveis.
+
 ## 5. Abas geradas no Excel
 
 A planilha final possui as abas:
 
-- `Dados Filtrados`: linhas da diretoria `DIR CYBER SECURITY`.
+- `Dados Filtrados`: linhas dos arquivos filtrados pela diretoria informada.
 - `Resumo`: consolidacao por `Release Train`, `Squad`, `Indicador` e
   `Requisito`, com `PASSED`, `FAILED`, `Percentual obtido`, pesos e pontuacao.
 - `Visao Indicadores`: consolidacao ponderada por indicador.

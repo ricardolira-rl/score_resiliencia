@@ -63,8 +63,8 @@ PILLAR_CONFIG = [
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Le uma ou mais planilhas Excel e filtra as linhas em que a coluna "
-            "'Diretoria' seja igual a 'DIR CYBER SECURITY'."
+            "Le uma ou mais planilhas Excel e filtra pelos arquivos cujo nome "
+            "sem extensao seja igual a 'DIR CYBER SECURITY'."
         )
     )
     parser.add_argument(
@@ -89,7 +89,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--diretoria",
         default=DEFAULT_DIRETORIA,
-        help=f"Valor usado no filtro da coluna Diretoria. Padrao: {DEFAULT_DIRETORIA!r}.",
+        help=(
+            "Valor usado para filtrar pelo nome do arquivo sem extensao. "
+            f"Padrao: {DEFAULT_DIRETORIA!r}."
+        ),
     )
     return parser
 
@@ -121,6 +124,39 @@ def validate_columns(dataframe: pd.DataFrame) -> None:
         )
 
 
+def normalize_text(value: object) -> str:
+    if pd.isna(value):
+        return ""
+    return " ".join(str(value).replace("\xa0", " ").split()).upper()
+
+
+def filter_by_diretoria(dataframe: pd.DataFrame, diretoria: str) -> pd.DataFrame:
+    if not diretoria:
+        return dataframe.copy()
+
+    target = normalize_text(diretoria)
+    return dataframe[
+        dataframe["Diretoria Arquivo"].map(normalize_text).eq(target)
+    ].copy()
+
+
+def format_diretoria_diagnostics(dataframe: pd.DataFrame) -> str:
+    file_values = (
+        dataframe["Diretoria Arquivo"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+        .value_counts()
+        .head(20)
+    )
+    if file_values.empty:
+        return "Nenhum valor encontrado no nome do arquivo."
+    return (
+        "Diretorias inferidas pelo nome do arquivo:\n"
+        f"{file_values.to_string() if not file_values.empty else '(vazio)'}"
+    )
+
+
 def read_spreadsheets(input_files: list[str], sheet: str) -> tuple[pd.DataFrame, list[Path]]:
     input_paths = [Path(input_file).expanduser() for input_file in input_files]
     dataframes = []
@@ -132,6 +168,7 @@ def read_spreadsheets(input_files: list[str], sheet: str) -> tuple[pd.DataFrame,
         dataframe = pd.read_excel(input_path, sheet_name=normalize_sheet_arg(sheet))
         validate_columns(dataframe)
         dataframe["Arquivo Origem"] = input_path.name
+        dataframe["Diretoria Arquivo"] = input_path.stem
         dataframes.append(dataframe)
 
     if not dataframes:
@@ -309,9 +346,14 @@ def filter_spreadsheet(
     dataframe, input_paths = read_spreadsheets(input_files, sheet)
     output_path = Path(output_file).expanduser() if output_file else default_output_path(input_paths)
 
-    filtered = dataframe[
-        dataframe["Diretoria"].astype(str).str.strip().eq(diretoria)
-    ].copy()
+    filtered = filter_by_diretoria(dataframe, diretoria)
+    if filtered.empty:
+        print(
+            "Aviso: nenhuma linha encontrada para a diretoria "
+            f"{diretoria!r}. Diretorias disponiveis:"
+        )
+        print(format_diretoria_diagnostics(dataframe))
+
     summary = build_summary(filtered)
     summary_with_pillars, indicator_view, pillar_view = build_pillar_view(summary)
     pillar_config = build_pillar_config()
