@@ -8,8 +8,9 @@ import pandas as pd
 
 
 DEFAULT_DIRETORIA = ""
+DEFAULT_COMUNIDADE = "CYBER SECURITY"
 SUMMARY_COLUMNS = ["Release Train", "Squad", "Indicador", "Requisito"]
-REQUIRED_COLUMNS = ["Diretoria", "Status", "Quantidade", *SUMMARY_COLUMNS]
+REQUIRED_COLUMNS = ["Diretoria", "Comunidade/Supt", "Status", "Quantidade", *SUMMARY_COLUMNS]
 STATUS_COLUMNS = ["PASSED", "FAILED", "Percentual obtido"]
 PILLAR_CONFIG = [
     {
@@ -94,6 +95,14 @@ def build_parser() -> argparse.ArgumentParser:
             "Se omitido, processa todos os arquivos informados."
         ),
     )
+    parser.add_argument(
+        "--comunidade",
+        default=DEFAULT_COMUNIDADE,
+        help=(
+            "Valor usado para filtrar a coluna 'Comunidade/Supt'. "
+            f"Padrao: {DEFAULT_COMUNIDADE!r}. Use vazio para nao filtrar."
+        ),
+    )
     return parser
 
 
@@ -138,6 +147,31 @@ def filter_by_diretoria(dataframe: pd.DataFrame, diretoria: str) -> pd.DataFrame
     return dataframe[
         dataframe["Diretoria Arquivo"].map(normalize_text).eq(target)
     ].copy()
+
+
+def filter_by_comunidade(dataframe: pd.DataFrame, comunidade: str) -> pd.DataFrame:
+    if not comunidade:
+        return dataframe.copy()
+
+    target = normalize_text(comunidade)
+    return dataframe[
+        dataframe["Comunidade/Supt"].map(normalize_text).eq(target)
+    ].copy()
+
+
+def format_comunidade_diagnostics(dataframe: pd.DataFrame) -> str:
+    values = (
+        dataframe["Comunidade/Supt"]
+        .fillna("")
+        .astype(str)
+        .str.replace("\xa0", " ", regex=False)
+        .str.strip()
+        .value_counts()
+        .head(20)
+    )
+    if values.empty:
+        return "Nenhum valor encontrado na coluna Comunidade/Supt."
+    return values.to_string()
 
 
 def format_diretoria_diagnostics(dataframe: pd.DataFrame) -> str:
@@ -342,6 +376,7 @@ def filter_spreadsheet(
     output_file: str | None,
     sheet: str,
     diretoria: str,
+    comunidade: str,
 ) -> Path:
     dataframe, input_paths = read_spreadsheets(input_files, sheet)
     output_path = Path(output_file).expanduser() if output_file else default_output_path(input_paths)
@@ -353,6 +388,14 @@ def filter_spreadsheet(
             f"{diretoria!r}. Diretorias disponiveis:"
         )
         print(format_diretoria_diagnostics(dataframe))
+
+    filtered = filter_by_comunidade(filtered, comunidade)
+    if filtered.empty:
+        print(
+            "Aviso: nenhuma linha encontrada para a comunidade "
+            f"{comunidade!r}. Comunidades disponiveis:"
+        )
+        print(format_comunidade_diagnostics(dataframe))
 
     summary = build_summary(filtered)
     summary_with_pillars, indicator_view, pillar_view = build_pillar_view(summary)
@@ -367,6 +410,7 @@ def filter_spreadsheet(
         pillar_config.to_excel(writer, sheet_name="Config Pilares", index=False)
 
     print(f"Arquivos lidos: {len(input_paths)}")
+    print(f"Comunidade filtrada: {comunidade or 'Todas'}")
     print(f"Linhas encontradas: {len(filtered)}")
     print(f"Linhas no resumo: {len(summary)}")
     print(f"Linhas na visao de pilares: {len(pillar_view)}")
@@ -384,6 +428,7 @@ def main() -> int:
             output_file=args.output,
             sheet=args.sheet,
             diretoria=args.diretoria,
+            comunidade=args.comunidade,
         )
     except Exception as exc:
         print(f"Erro: {exc}", file=sys.stderr)

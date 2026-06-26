@@ -4,6 +4,9 @@ Scripts Python para ler uma planilha Excel do Score de Resiliencia, identificar
 a diretoria pelo nome do arquivo sem extensao e gerar visoes consolidadas por
 `Release Train`, `Squad`, `Indicador`, `Requisito` e `Pilar`.
 
+Por padrao, os scripts tambem filtram somente linhas em que a coluna
+`Comunidade/Supt` seja igual a `CYBER SECURITY`.
+
 ## Scripts e arquivos
 
 ### `filter_dir_cyber_security.py`
@@ -19,6 +22,7 @@ Entrada:
 
 - planilha Excel original;
 - coluna `Diretoria`;
+- coluna `Comunidade/Supt`;
 - coluna `Release Train`;
 - coluna `Squad`;
 - coluna `Indicador`;
@@ -89,16 +93,26 @@ python listar_indicadores_requisitos.py "C:\caminho\primeira_planilha.xlsx" "C:\
 Por padrao, ele processa todos os arquivos informados. Cada arquivo vira uma
 diretoria usando o nome do arquivo sem extensao.
 
+Por padrao, ele tambem filtra somente a comunidade `CYBER SECURITY` na coluna
+`Comunidade/Supt`.
+
 Para filtrar uma diretoria especifica, informe o nome do arquivo sem extensao:
 
 ```powershell
 python listar_indicadores_requisitos.py "C:\caminho\segunda_planilha.xlsx" --diretoria "DIR TEC OPER CYBER SECURITY"
 ```
 
+Para listar todas as comunidades, sem aplicar esse filtro:
+
+```powershell
+python listar_indicadores_requisitos.py "C:\caminho\segunda_planilha.xlsx" --comunidade ""
+```
+
 Saida esperada no terminal:
 
 ```text
 Diretoria filtrada: Todas
+Comunidade filtrada: CYBER SECURITY
 Indicadores encontrados: 1
 Requisitos encontrados: 2
 ```
@@ -204,12 +218,16 @@ valor.
 Outro exemplo: um arquivo chamado `DIR TEC OPER CYBER SECURITY.xlsx` sera
 tratado como diretoria `DIR TEC OPER CYBER SECURITY`.
 
+Além disso, a saída final usa apenas linhas em que `Comunidade/Supt` seja
+`CYBER SECURITY`, a menos que voce rode com `--comunidade ""`.
+
 ## Colunas obrigatorias
 
 As planilhas podem ter colunas extras ou estruturas diferentes, mas precisam
 conter estas colunas:
 
 - `Diretoria`
+- `Comunidade/Supt`
 - `Release Train`
 - `Squad`
 - `Indicador`
@@ -219,6 +237,9 @@ conter estas colunas:
 
 O filtro de diretoria usa a coluna `Diretoria Arquivo`, criada
 automaticamente a partir do nome do arquivo sem extensao. Esse filtro ignora
+diferencas de maiusculas/minusculas, espacos repetidos e espacos invisiveis.
+
+O filtro de comunidade usa a coluna `Comunidade/Supt` e tambem ignora
 diferencas de maiusculas/minusculas, espacos repetidos e espacos invisiveis.
 
 ## 5. Abas geradas no Excel

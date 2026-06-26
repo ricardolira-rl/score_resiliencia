@@ -9,7 +9,8 @@ import pandas as pd
 
 DEFAULT_INPUT_FILE = r"C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx"
 DEFAULT_DIRETORIA = ""
-REQUIRED_COLUMNS = ["Diretoria", "Indicador", "Requisito"]
+DEFAULT_COMUNIDADE = "CYBER SECURITY"
+REQUIRED_COLUMNS = ["Diretoria", "Comunidade/Supt", "Indicador", "Requisito"]
 DEFAULT_PILLAR_COUNT = 6
 
 
@@ -45,6 +46,14 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Valor usado para filtrar pelo nome do arquivo sem extensao. "
             "Se omitido, lista todas as diretorias/arquivos informados."
+        ),
+    )
+    parser.add_argument(
+        "--comunidade",
+        default=DEFAULT_COMUNIDADE,
+        help=(
+            "Valor usado para filtrar a coluna 'Comunidade/Supt'. "
+            f"Padrao: {DEFAULT_COMUNIDADE!r}. Use vazio para nao filtrar."
         ),
     )
     parser.add_argument(
@@ -99,6 +108,31 @@ def format_diretoria_diagnostics(dataframe: pd.DataFrame) -> str:
     )
 
 
+def filter_by_comunidade(dataframe: pd.DataFrame, comunidade: str) -> pd.DataFrame:
+    if not comunidade:
+        return dataframe.copy()
+
+    target = normalize_text(comunidade)
+    return dataframe[
+        dataframe["Comunidade/Supt"].map(normalize_text).eq(target)
+    ].copy()
+
+
+def format_comunidade_diagnostics(dataframe: pd.DataFrame) -> str:
+    values = (
+        dataframe["Comunidade/Supt"]
+        .fillna("")
+        .astype(str)
+        .str.replace("\xa0", " ", regex=False)
+        .str.strip()
+        .value_counts()
+        .head(20)
+    )
+    if values.empty:
+        return "Nenhum valor encontrado na coluna Comunidade/Supt."
+    return values.to_string()
+
+
 def read_spreadsheets(input_files: list[str], sheet: str) -> tuple[pd.DataFrame, list[Path]]:
     input_paths = [Path(input_file).expanduser() for input_file in input_files]
     dataframes = []
@@ -129,7 +163,7 @@ def default_output_path() -> Path:
     return Path.cwd() / "pillar_config_sugerido.py"
 
 
-def build_inventory(dataframe: pd.DataFrame, diretoria: str) -> pd.DataFrame:
+def build_inventory(dataframe: pd.DataFrame, diretoria: str, comunidade: str) -> pd.DataFrame:
     working = dataframe.copy()
 
     if diretoria:
@@ -144,6 +178,14 @@ def build_inventory(dataframe: pd.DataFrame, diretoria: str) -> pd.DataFrame:
             f"{diretoria!r}. Diretorias disponiveis:"
         )
         print(format_diretoria_diagnostics(dataframe))
+
+    working = filter_by_comunidade(working, comunidade)
+    if working.empty:
+        print(
+            "Aviso: nenhuma linha encontrada para a comunidade "
+            f"{comunidade!r}. Comunidades disponiveis:"
+        )
+        print(format_comunidade_diagnostics(dataframe))
 
     working["Indicador"] = working["Indicador"].map(clean_text)
     working["Requisito"] = working["Requisito"].map(clean_text)
@@ -245,17 +287,19 @@ def list_indicators_requirements(
     output_file: str | None,
     sheet: str,
     diretoria: str,
+    comunidade: str,
     pilares: int,
 ) -> Path:
     dataframe, input_paths = read_spreadsheets(input_files, sheet)
 
-    inventory = build_inventory(dataframe, diretoria)
+    inventory = build_inventory(dataframe, diretoria, comunidade)
     output_path = Path(output_file).expanduser() if output_file else default_output_path()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(render_pillar_config(inventory, pilares), encoding="utf-8")
 
     print(f"Arquivos lidos: {len(input_paths)}")
     print(f"Diretoria filtrada: {diretoria or 'Todas'}")
+    print(f"Comunidade filtrada: {comunidade or 'Todas'}")
     print(f"Pilares na sugestao: {pilares}")
     print(f"Indicadores encontrados: {inventory['Indicador'].nunique()}")
     print(f"Requisitos encontrados: {len(inventory)}")
@@ -276,6 +320,7 @@ def main() -> int:
             output_file=args.output,
             sheet=args.sheet,
             diretoria=args.diretoria,
+            comunidade=args.comunidade,
             pilares=args.pilares,
         )
     except Exception as exc:
