@@ -1,35 +1,115 @@
 # Score Resiliencia
 
-Script Python para ler uma planilha Excel, filtrar os registros da diretoria
-`DIR CYBER SECURITY` e gerar uma nova planilha com visoes de resumo.
+Scripts Python para ler uma planilha Excel do Score de Resiliencia, filtrar os
+registros da diretoria `DIR CYBER SECURITY` e gerar visoes consolidadas por
+`Release Train`, `Squad`, `Indicador`, `Requisito` e `Pilar`.
 
-## O que o script gera
+## Scripts e arquivos
 
-- `Dados Filtrados`: registros filtrados pela coluna `Diretoria`.
-- `Resumo`: contagem/soma por `Release Train`, `Squad`, `Indicador` e `Requisito`.
-- `Visao Indicadores`: consolidacao ponderada por indicador.
-- `Visao Pilares`: consolidacao ponderada por pilar.
-- `Config Pilares`: configuracao de pilares, indicadores, requisitos e pesos usada no calculo.
+### `filter_dir_cyber_security.py`
 
-## Como executar
+Script principal do projeto.
+
+Ele le a planilha original, filtra os registros da diretoria configurada e
+gera uma nova planilha Excel com abas de dados filtrados, resumo, visao por
+indicador, visao por pilar e configuracao usada no calculo.
+
+Entrada:
+
+- planilha Excel original;
+- coluna `Diretoria`;
+- coluna `Release Train`;
+- coluna `Squad`;
+- coluna `Indicador`;
+- coluna `Requisito`;
+- coluna `Status`;
+- coluna `Quantidade`.
+
+Saida:
+
+- arquivo `.xlsx` filtrado e calculado.
+
+### `listar_indicadores_requisitos.py`
+
+Script auxiliar para preparar a configuracao dos pilares.
+
+Ele varre a planilha original, identifica os pares unicos de `Indicador` e
+`Requisito`, mostra uma amostra no terminal e gera um arquivo com uma sugestao
+inicial de `PILLAR_CONFIG`.
+
+Entrada:
+
+- planilha Excel original.
+
+Saida:
+
+- lista de indicadores e requisitos no terminal;
+- arquivo `pillar_config_sugerido.py`.
+
+### `pillar_config_sugerido.py`
+
+Arquivo gerado pelo script `listar_indicadores_requisitos.py`.
+
+Ele nao executa o calculo final sozinho. A funcao dele e servir como base para
+copiar ou adaptar a variavel `PILLAR_CONFIG` dentro do script
+`filter_dir_cyber_security.py`.
+
+Entrada:
+
+- gerado automaticamente a partir da planilha original.
+
+Saida:
+
+- bloco Python sugerido para configurar pilares, indicadores, requisitos e
+  pesos.
+
+## 1. Instalar dependencias
+
+Execute no PowerShell:
 
 ```powershell
-python filter_dir_cyber_security.py "C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx"
+pip install pandas openpyxl
 ```
 
-Para escolher o arquivo de saida:
+## 2. Rodar o inventario de indicadores e requisitos
+
+Antes de configurar os pilares, rode o script de inventario:
 
 ```powershell
-python filter_dir_cyber_security.py "C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx" -o "C:\Users\ricar\Documents\Score Resiliencia\DIR CYBER SECURITY_filtrado.xlsx"
+python listar_indicadores_requisitos.py "C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx"
 ```
 
-## Configuracao dos pesos
+Por padrao, ele filtra somente a diretoria `DIR CYBER SECURITY`.
 
-Os pesos ficam no codigo, na variavel `PILLAR_CONFIG`, em tres niveis:
+Saida esperada no terminal:
 
-- `Peso Pilar %`
-- `Peso Indicador %`
-- `Peso Requisito %`
+```text
+Diretoria filtrada: DIR CYBER SECURITY
+Indicadores encontrados: 1
+Requisitos encontrados: 2
+```
+
+Esse comando executa o script `listar_indicadores_requisitos.py`.
+
+Ele tambem gera o arquivo:
+
+```text
+pillar_config_sugerido.py
+```
+
+Use esse arquivo como base para configurar os pilares, indicadores, requisitos
+e pesos no script principal.
+
+## 3. Configurar pilares e pesos no script principal
+
+Abra o arquivo `filter_dir_cyber_security.py` e ajuste a variavel
+`PILLAR_CONFIG`.
+
+A configuracao possui tres niveis de peso:
+
+- `Peso Pilar %`: peso do pilar na visao final.
+- `Peso Indicador %`: peso do indicador dentro do pilar.
+- `Peso Requisito %`: peso do requisito dentro do indicador.
 
 Exemplo:
 
@@ -52,8 +132,49 @@ PILLAR_CONFIG = [
 ]
 ```
 
-## Dependencias
+## 4. Gerar a planilha final
+
+Execute:
 
 ```powershell
-pip install pandas openpyxl
+python filter_dir_cyber_security.py "C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx"
 ```
+
+Para escolher o local e nome do arquivo de saida:
+
+```powershell
+python filter_dir_cyber_security.py "C:\Users\ricar\Desktop\DIR CYBER SECURITY.xlsx" -o "C:\Users\ricar\Documents\Score Resiliencia\DIR CYBER SECURITY_filtrado.xlsx"
+```
+
+Esse comando executa o script `filter_dir_cyber_security.py`.
+
+## 5. Abas geradas no Excel
+
+A planilha final possui as abas:
+
+- `Dados Filtrados`: linhas da diretoria `DIR CYBER SECURITY`.
+- `Resumo`: consolidacao por `Release Train`, `Squad`, `Indicador` e
+  `Requisito`, com `PASSED`, `FAILED`, `Percentual obtido`, pesos e pontuacao.
+- `Visao Indicadores`: consolidacao ponderada por indicador.
+- `Visao Pilares`: consolidacao ponderada por pilar.
+- `Config Pilares`: configuracao de pesos usada na execucao.
+
+## 6. Regras principais do calculo
+
+- Para status `PASSED` e `FAILED`, o script soma a coluna `Quantidade`.
+- Para status `Percentual obtido`, o script usa a soma da coluna `Quantidade`
+  como resultado percentual.
+- A pontuacao do requisito usa `Resultado % * Peso Requisito %`.
+- A pontuacao do indicador usa a soma dos requisitos ponderada pelo
+  `Peso Indicador %`.
+- A pontuacao final do pilar usa o resultado do pilar ponderado pelo
+  `Peso Pilar %`.
+
+## Fluxo recomendado
+
+1. Instale as dependencias.
+2. Rode `listar_indicadores_requisitos.py` para descobrir os indicadores e
+   requisitos existentes na planilha.
+3. Use o arquivo `pillar_config_sugerido.py` como referencia.
+4. Edite o `PILLAR_CONFIG` no `filter_dir_cyber_security.py`.
+5. Rode `filter_dir_cyber_security.py` para gerar a planilha final.
