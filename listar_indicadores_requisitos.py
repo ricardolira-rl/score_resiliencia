@@ -85,6 +85,10 @@ def validate_columns(dataframe: pd.DataFrame) -> None:
         )
 
 
+def infer_diretoria_from_filename(input_path: Path) -> str:
+    return input_path.stem.removesuffix("_squads_atualizadas")
+
+
 def normalize_text(value: object) -> str:
     if pd.isna(value):
         return ""
@@ -144,7 +148,7 @@ def read_spreadsheets(input_files: list[str], sheet: str) -> tuple[pd.DataFrame,
         dataframe = pd.read_excel(input_path, sheet_name=normalize_sheet_arg(sheet))
         validate_columns(dataframe)
         dataframe["Arquivo Origem"] = input_path.name
-        dataframe["Diretoria Arquivo"] = input_path.stem
+        dataframe["Diretoria Arquivo"] = infer_diretoria_from_filename(input_path)
         dataframes.append(dataframe)
 
     if not dataframes:
